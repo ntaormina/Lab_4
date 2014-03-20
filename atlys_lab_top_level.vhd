@@ -33,41 +33,41 @@ architecture Behavioral of atlys_lab_top_level is
 
 
 
---  component kcpsm6 
---    generic(                 hwbuild : std_logic_vector(7 downto 0) := X"00";
---                    interrupt_vector : std_logic_vector(11 downto 0) := X"3FF";
---             scratch_pad_memory_size : integer := 64);
---    port (                   address : out std_logic_vector(11 downto 0);
---                         instruction : in std_logic_vector(17 downto 0);
---                         bram_enable : out std_logic;
---                             in_port : in std_logic_vector(7 downto 0);
---                            out_port : out std_logic_vector(7 downto 0);
---                             port_id : out std_logic_vector(7 downto 0);
---                        write_strobe : out std_logic;
---                      k_write_strobe : out std_logic;
---                         read_strobe : out std_logic;
---                           interrupt : in std_logic;
---                       interrupt_ack : out std_logic;
---                               sleep : in std_logic;
---                               reset : in std_logic;
---                                 clk : in std_logic);
---  end component;
+  component kcpsm6 
+    generic(                 hwbuild : std_logic_vector(7 downto 0) := X"00";
+                    interrupt_vector : std_logic_vector(11 downto 0) := X"3FF";
+             scratch_pad_memory_size : integer := 64);
+    port (                   address : out std_logic_vector(11 downto 0);
+                         instruction : in std_logic_vector(17 downto 0);
+                         bram_enable : out std_logic;
+                             in_port : in std_logic_vector(7 downto 0);
+                            out_port : out std_logic_vector(7 downto 0);
+                             port_id : out std_logic_vector(7 downto 0);
+                        write_strobe : out std_logic;
+                      k_write_strobe : out std_logic;
+                         read_strobe : out std_logic;
+                           interrupt : in std_logic;
+                       interrupt_ack : out std_logic;
+                               sleep : in std_logic;
+                               reset : in std_logic;
+                                 clk : in std_logic);
+  end component;
 
 
---
+
 -- Development Program Memory
---
 
---  component atlys_real_time_clock
---    generic(             C_FAMILY : string := "S6"; 
---                C_RAM_SIZE_KWORDS : integer := 1;
---             C_JTAG_LOADER_ENABLE : integer := 0);
---    Port (      address : in std_logic_vector(11 downto 0);
---            instruction : out std_logic_vector(17 downto 0);
---                 enable : in std_logic;
---                    rdl : out std_logic;                    
---                    clk : in std_logic);
---  end component;
+
+  component Taormina
+    generic(             C_FAMILY : string := "S6"; 
+                C_RAM_SIZE_KWORDS : integer := 1;
+             C_JTAG_LOADER_ENABLE : integer := 0);
+    Port (      address : in std_logic_vector(11 downto 0);
+            instruction : out std_logic_vector(17 downto 0);
+                 enable : in std_logic;
+                    rdl : out std_logic;                    
+                    clk : in std_logic);
+  end component;
 
 --
 -- UART Transmitter with integral 16 byte FIFO buffer
@@ -179,31 +179,31 @@ begin
   -- 
   --
 
---  processor: kcpsm6
---    generic map (                 hwbuild => X"41",    -- 41 hex is ASCII character "A"
---                         interrupt_vector => X"3C0",   
---                  scratch_pad_memory_size => 64)
---    port map(      address => address,
---               instruction => instruction,
---               bram_enable => bram_enable,
---                   port_id => port_id,
---              write_strobe => write_strobe,
---            k_write_strobe => k_write_strobe,
---                  out_port => out_port,
---               read_strobe => read_strobe,
---                   in_port => in_port,
---                 interrupt => interrupt,
---             interrupt_ack => interrupt_ack,
---                     sleep => kcpsm6_sleep,
---                     reset => reset,
---                       clk => clk);
--- 
---interrupt <= interrupt_ack;
---
--- 
---
---
---  kcpsm6_sleep <= '0';  -- Always '0'
+  processor: kcpsm6
+    generic map (                 hwbuild => X"41",    -- 41 hex is ASCII character "A"
+                         interrupt_vector => X"3C0",   
+                  scratch_pad_memory_size => 64)
+    port map(      address => address,
+               instruction => instruction,
+               bram_enable => bram_enable,
+                   port_id => port_id,
+              write_strobe => write_strobe,
+            k_write_strobe => k_write_strobe,
+                  out_port => out_port,
+               read_strobe => read_strobe,
+                   in_port => in_port,
+                 interrupt => interrupt,
+             interrupt_ack => interrupt_ack,
+                     sleep => kcpsm6_sleep,
+                     reset => reset,
+                       clk => clk);
+ 
+interrupt <= interrupt_ack;
+
+ 
+
+
+  kcpsm6_sleep <= '0';  -- Always '0'
 
 
   --
@@ -211,15 +211,15 @@ begin
   --   JTAG Loader enabled for rapid code development. 
   --
 
---  program_rom: atlys_real_time_clock
---    generic map(             C_FAMILY => "S6", 
---                    C_RAM_SIZE_KWORDS => 2,
---                 C_JTAG_LOADER_ENABLE => 1)
---    port map(      address => address,      
---               instruction => instruction,
---                    enable => bram_enable,
---                       rdl => rdl,
---                       clk => clk);
+  program_rom:Taormina
+    generic map(             C_FAMILY => "S6", 
+                    C_RAM_SIZE_KWORDS => 2,
+                 C_JTAG_LOADER_ENABLE => 1)
+    port map(      address => address,      
+               instruction => instruction,
+                    enable => bram_enable,
+                       rdl => rdl,
+                       clk => clk);
 
 
 	Inst_clk_to_baud: clk_to_baud PORT MAP(
@@ -266,8 +266,8 @@ begin
 --		nibble => switch(3 downto 0),
 --		ascii => switchLS
 --	);
-
- 
+--
+-- 
 --in_port <= uart_rx_data_out when port_id = x"05" else
 --           switchLS when port_id = x"03" else
 --			  switchMS when port_id = x"02" else
@@ -283,8 +283,8 @@ begin
 --uart_tx_data_in <= out_port when port_id = x"04" else
 --						 (others=>'0');
 --
---led <= out_port when port_id = x"" else  
-  
+
+--  
 end Behavioral;
 
 
