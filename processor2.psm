@@ -1,21 +1,20 @@
-;input
+;I/O Ports
+buffer_port   EQU $01  
 input         EQU $02
-
-;ports
-buffer_port   EQU $01  ; input
+output        EQU $03  
 SWTMS_in      EQU $04
 SWTLS_in      EQU $05
-output        EQU $03  ; output
 LEDMS_out     EQU $06
 LEDLS_out     EQU $07
 
 ;registers
-temp 	      EQU s0   ; temporary register
-charOne       EQU s1   ; temporary register
-charTwo       EQU s2   ; temporary register
-charThree     EQU s3   ; temporary register
+temp 	      EQU s0  
+charOne       EQU s1   
+charTwo       EQU s2   
+charThree     EQU s3  
 led_in_1      EQU s4
 led_in_2      EQU s5
+
 ;constants
 l             EQU $6C
 e             EQU $65
