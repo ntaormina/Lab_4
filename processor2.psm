@@ -1,0 +1,123 @@
+;input
+input         EQU $02
+
+;ports
+buffer_port   EQU $01  ; input
+SWTMS_in      EQU $04
+SWTLS_in      EQU $05
+output        EQU $03  ; output
+LEDMS_out     EQU $06
+LEDLS_out     EQU $07
+
+;registers
+temp 	      EQU s0   ; temporary register
+charOne       EQU s1   ; temporary register
+charTwo       EQU s2   ; temporary register
+charThree     EQU s3   ; temporary register
+led_in_1      EQU s4
+led_in_2      EQU s5
+;constants
+l             EQU $6C
+e             EQU $65
+d             EQU $64
+s             EQU $73
+w             EQU $77
+t             EQU $74 
+NextLine      EQU $0A
+Return        EQU $0D
+
+Main: 
+      
+      IN      temp, buffer_port
+      COMP    temp, 0x0
+      JUMP    NZ, FirstChar 	
+      JUMP    Main      
+      
+RESET:
+      LOAD  temp, NextLine
+      OUT   temp, output
+      LOAD  temp, Return
+      OUT   temp, output
+      LOAD  temp, 0x0
+      LOAD  charOne, 0x0
+      LOAD  charTwo, 0x0
+      LOAD  charThree, 0x0
+      LOAD  led_in_1, 0x0
+      LOAD  led_in_2, 0x0
+      JUMP  Main      
+      
+FirstChar:      
+      IN     charOne, input      
+      OUT    charOne, output
+      
+      
+SecondChar:
+      IN     temp, buffer_port
+      COMP   temp, 0x0
+      JUMP   Z, SecondChar    		      
+      IN     charTwo, input
+      OUT    charTwo, output
+      
+      
+ThirdChar:
+      IN     temp, buffer_port
+      COMP   temp, 0x0
+      JUMP   Z, ThirdChar    		      
+      IN     charThree, input
+      OUT    charThree, output
+      COMP   charOne, l
+      JUMP   Z, LED
+      COMP   charOne, s
+      JUMP   Z, SWT
+      JUMP   RESET    
+       
+SWT:
+      COMP  charTwo, w
+      JUMP  NZ, RESET
+      COMP  charThree, t
+      JUMP  NZ, RESET
+      LOAD  temp, 0x20
+      OUT   temp, output
+      IN    temp, SWTMS_in
+      OUT   temp, output
+      IN    temp, SWTLS_in
+      OUT   temp, output
+      JUMP  RESET       	      
+
+LED:
+      COMP  charTwo, e
+      JUMP  NZ, RESET
+      COMP  charThree, d
+      JUMP  NZ, RESET
+      LOAD  temp, 0x20
+      OUT   temp, output
+      
+FIRSTNUM:
+      IN     temp, buffer_port
+      COMP   temp, 0x0
+      JUMP   Z, FIRSTNUM    
+      
+      IN    led_in_1, input      
+      OUT   led_in_1, output  
+         
+SECONDNUM:
+      IN     temp, buffer_port
+      COMP   temp, 0x0
+      JUMP   Z, SECONDNUM
+      
+      IN    led_in_2, input
+     
+      
+      
+      OUT   led_in_1, LEDMS_out
+      
+      OUT   led_in_2, output
+      OUT   led_in_2, LEDLS_out
+      JUMP  RESET	
+
+	      
+       
+ISR:  RETI    ENABLE
+
+ORG   0x3FF
+      JUMP     ISR
