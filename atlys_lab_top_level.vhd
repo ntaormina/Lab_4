@@ -163,11 +163,10 @@ signal        data_present : std_logic;
 --
 -- Signals used to define baud rate
 --
-signal	asciiMS, asciiLS  : std_logic_vector(3 downto 0);
-signal	switchMS, switchLS, nibble_reg_1, nibble_reg_2, nibble_1, nibble_2, nibble_1_next, nibble_2_next : std_logic_vector(7 downto 0);
+
+signal	switchMS, switchLS, ascii_1, ascii_2, ascii_1_next, ascii_2_next : std_logic_vector(7 downto 0);
 signal         en_16_x_baud : std_logic ;
---
---
+
 
 -------------------------------------------------------------------------------------------
 --
@@ -208,11 +207,7 @@ begin
                      reset => reset,
                        clk => clk);
  
-interrupt <= interrupt_ack;
-
- 
-
-
+  interrupt <= interrupt_ack;
   kcpsm6_sleep <= '0';  -- Always '0'
 
 
@@ -232,34 +227,39 @@ interrupt <= interrupt_ack;
                        clk => clk);
 
 
+------------------------------------------------------------------------
+--converters for output logic
+	
+		nibble_to_ascii_most_significant: nibble_to_ascii PORT MAP(
+		nibble => switch(7 downto 4),
+		ascii => switchMS
+	);
+	
+		nibble_to_ascii_least_significant: nibble_to_ascii PORT MAP(
+		nibble => switch(3 downto 0),
+		ascii => switchLS
+	);
+	
+		Inst_ascii_to_ascii_first_four: ascii_to_nibble PORT MAP(
+		ascii => ascii_1,
+		nibble => led(7 downto 4)
+	);
+	
+		Inst_ascii_to_ascii_last_four: ascii_to_nibble PORT MAP(
+		ascii => ascii_2,
+		nibble => led(3 downto 0)
+	);
+	
+------------------------------------------------------------------------
+--enables UART	
 	Inst_clk_to_baud: clk_to_baud PORT MAP(
 		clk => clk,
 		reset => reset,
 		baud_16x_en => en_16_x_baud
 	);
-	
-		Inst_nibble_to_ascii_1: nibble_to_ascii PORT MAP(
-		nibble => switch(7 downto 4),
-		ascii => switchMS
-	);
-	
-		Inst_nibble_to_ascii_2: nibble_to_ascii PORT MAP(
-		nibble => switch(3 downto 0),
-		ascii => switchLS
-	);
-	
-		Inst_ascii_to_nibble_1: ascii_to_nibble PORT MAP(
-		ascii => nibble_1,
-		nibble => led(7 downto 4)
-	);
-	
-		Inst_ascii_to_nibble_2: ascii_to_nibble PORT MAP(
-		ascii => nibble_2,
-		nibble => led(3 downto 0)
-	);
-
-
-  rx: uart_rx6 swt
+--------------------------------------------------------------------------
+--UART Instantiations
+  rx: uart_rx6 
   port map (            serial_in => serial_in,
                      en_16_x_baud => en_16_x_baud,
                          data_out => uart_rx_data_out,
@@ -283,27 +283,31 @@ interrupt <= interrupt_ack;
                               clk => clk);
 
 
-
+------------------------------------------------------------
+--DFF for led intermediate logic
 process(clk)
 begin
 	if(rising_edge(clk))then
 		if reset = '1' then
-			nibble_1 <= (others=>'0');
-			nibble_2 <= (others=>'0');
+			ascii_1 <= (others=>'0');
+			ascii_2 <= (others=>'0');
 		else
-			nibble_1 <= nibble_1_next;
-			nibble_2 <= nibble_2_next;
+			ascii_1 <= ascii_1_next;
+			ascii_2 <= ascii_2_next;
 		end if;
 	end if;
 end process;	
+-------------------------------------------------------------
+--Led intermediate Logic
 						
-nibble_1_next <=  out_port when port_id =x"06" and write_strobe = '1'
-						else nibble_1;
+ascii_1_next <=  out_port when port_id =x"06" and write_strobe = '1'
+						else ascii_1;
 						
-nibble_2_next <=  out_port when port_id =x"07" and write_strobe = '1'
-						else nibble_2;						
+ascii_2_next <=  out_port when port_id =x"07" and write_strobe = '1'
+						else ascii_2;						
 
-
+---------------------------------------------------------------
+--KCPSM6 and UART Logic
 in_port <= uart_rx_data_out when port_id = x"02" else
                   switchLS when port_id = x"05" else
 			         switchMS when port_id = x"04" else
@@ -319,12 +323,7 @@ uart_rx_data_present  <= '1' when (read_strobe = '1') and (port_id = x"02")
 uart_tx_data_in <= out_port when port_id =x"03" else
 							(others=>'0');
   
-
-
-
-
-
-  
+-------------------------------------------------------------------------  
 end Behavioral;
 
 
