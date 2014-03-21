@@ -107,6 +107,15 @@ architecture Behavioral of atlys_lab_top_level is
 		ascii : OUT std_logic_vector(7 downto 0)
 		);
 	END COMPONENT;
+	
+		COMPONENT ascii_to_nibble
+	PORT(
+		ascii : IN std_logic_vector(7 downto 0);          
+		nibble : OUT std_logic_vector(3 downto 0)
+		);
+	END COMPONENT;
+
+
 --
 --
 -------------------------------------------------------------------------------------------
@@ -150,11 +159,12 @@ signal uart_rx_data_present : std_logic;
 signal    uart_rx_half_full : std_logic;
 signal         uart_rx_full : std_logic;
 signal        uart_rx_reset : std_logic;
+signal        data_present : std_logic;
 --
 -- Signals used to define baud rate
 --
-
-signal	asciiMS, asciiLS, switchMS, switchLS : std_logic_vector(7 downto 0);
+signal	asciiMS, asciiLS  : std_logic_vector(3 downto 0);
+signal	switchMS, switchLS, nibble_reg_1, nibble_reg_2, nibble_1, nibble_2, nibble_1_next, nibble_2_next : std_logic_vector(7 downto 0);
 signal         en_16_x_baud : std_logic ;
 --
 --
@@ -227,64 +237,94 @@ interrupt <= interrupt_ack;
 		reset => reset,
 		baud_16x_en => en_16_x_baud
 	);
+	
+		Inst_nibble_to_ascii_1: nibble_to_ascii PORT MAP(
+		nibble => switch(7 downto 4),
+		ascii => switchMS
+	);
+	
+		Inst_nibble_to_ascii_2: nibble_to_ascii PORT MAP(
+		nibble => switch(3 downto 0),
+		ascii => switchLS
+	);
+	
+		Inst_ascii_to_nibble_1: ascii_to_nibble PORT MAP(
+		ascii => nibble_1,
+		nibble => led(7 downto 4)
+	);
+	
+		Inst_ascii_to_nibble_2: ascii_to_nibble PORT MAP(
+		ascii => nibble_2,
+		nibble => led(3 downto 0)
+	);
 
 
-  
-
-  tx: uart_tx6 
-  port map (              data_in => uart_rx_data_out,
-                     en_16_x_baud => en_16_x_baud,
-                       serial_out => serial_out,
-                     buffer_write => uart_rx_data_present,
-              buffer_data_present => uart_tx_data_present,
-                 buffer_half_full => open,
-                      buffer_full => open,
-                     buffer_reset => reset,              
-                              clk => clk);
-
-
-
-  
   rx: uart_rx6 
   port map (            serial_in => serial_in,
                      en_16_x_baud => en_16_x_baud,
                          data_out => uart_rx_data_out,
-                      buffer_read => uart_tx_data_present,
-              buffer_data_present => uart_rx_data_present,
+                      buffer_read => uart_rx_data_present,
+              buffer_data_present => data_present,
                  buffer_half_full => open,
                       buffer_full => open,
-                     buffer_reset => reset,              
+                     buffer_reset => '0',              
+                              clk => clk);
+  
+
+  tx: uart_tx6 
+  port map (              data_in => uart_tx_data_in,
+                     en_16_x_baud => en_16_x_baud,
+                       serial_out => serial_out,
+                     buffer_write => uart_tx_data_present,
+              buffer_data_present => open,
+                 buffer_half_full => open,
+                      buffer_full => open,
+                     buffer_reset => '0',              
                               clk => clk);
 
 
---	Inst_nibble_to_ascii_1: nibble_to_ascii PORT MAP(
---		nibble => switch(7 downto 4),
---		ascii => switchMS
---	);
---	
---		Inst_nibble_to_ascii_2: nibble_to_ascii PORT MAP(
---		nibble => switch(3 downto 0),
---		ascii => switchLS
---	);
---
--- 
---in_port <= uart_rx_data_out when port_id = x"05" else
---           switchLS when port_id = x"03" else
---			  switchMS when port_id = x"02" else
---			  "0000000" & uart_rx_data_present when port_id =x"01" else
---			  (others=> '0');
---
---write_to_uart_tx  <= '1' when (write_strobe = '1') and (port_id = x"04")
---                     else '0';                     
---
---read_from_uart_rx  <= '1' when (read_strobe = '1') and (port_id = x"05")
---                      else '0';
---  
---uart_tx_data_in <= out_port when port_id = x"04" else
---						 (others=>'0');
---
 
---  
+process(clk)
+begin
+	if(rising_edge(clk))then
+		if reset = '1' then
+			nibble_1 <= (others=>'0');
+			nibble_2 <= (others=>'0');
+		else
+			nibble_1 <= nibble_1_next;
+			nibble_2 <= nibble_2_next;
+		end if;
+	end if;
+end process;	
+						
+nibble_1_next <=  out_port when port_id =x"06" and write_strobe = '1'
+						else nibble_1;
+						
+nibble_2_next <=  out_port when port_id =x"07" and write_strobe = '1'
+						else nibble_2;						
+
+
+in_port <= uart_rx_data_out when port_id = x"02" else
+                  switchLS when port_id = x"05" else
+			         switchMS when port_id = x"04" else
+			         "0000000" & data_present when port_id =x"01" else
+			         (others=> '0');
+
+uart_tx_data_present  <= '1' when (write_strobe = '1') and (port_id = x"03")
+                      else '0';                     
+
+uart_rx_data_present  <= '1' when (read_strobe = '1') and (port_id = x"02")
+                      else '0';
+  
+uart_tx_data_in <= out_port when port_id =x"03" else
+							(others=>'0');
+  
+
+
+
+
+
+  
 end Behavioral;
 
 
