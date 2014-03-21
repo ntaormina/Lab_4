@@ -259,7 +259,7 @@ interrupt <= interrupt_ack;
 	);
 
 
-  rx: uart_rx6 
+  rx: uart_rx6 swt
   port map (            serial_in => serial_in,
                      en_16_x_baud => en_16_x_baud,
                          data_out => uart_rx_data_out,

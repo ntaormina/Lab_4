@@ -104,14 +104,11 @@ SECONDNUM:
       IN     temp, buffer_port
       COMP   temp, 0x0
       JUMP   Z, SECONDNUM
-      
-      IN    led_in_2, input
-     
-      
-      
-      OUT   led_in_1, LEDMS_out
-      
-      OUT   led_in_2, output
+	  
+      IN    led_in_2, input   
+	  OUT   led_in_2, output	
+	  
+      OUT   led_in_1, LEDMS_out      
       OUT   led_in_2, LEDLS_out
       JUMP  RESET	
 
